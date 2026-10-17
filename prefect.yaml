@@ -1,0 +1,24 @@
+name: itl-cvelistv5-importer
+prefect-version: 3.8.8
+
+build: null
+push: null
+
+pull:
+  - prefect.deployments.steps.set_working_directory:
+      directory: /opt/prefect
+
+deployments:
+  - name: cvelistv5-delta-import
+    entrypoint: cvelist/flows.py:import_cvelistv5_flow
+    parameters:
+      mode: delta
+    work_pool:
+      name: itl-amalia
+      job_variables:
+        image: nweistra/itlprefectcvelistv5:latest
+        image_pull_policy: IfNotPresent
+        namespace: prefect-demo
+    schedules:
+      - cron: "30 * * * *"
+        timezone: UTC

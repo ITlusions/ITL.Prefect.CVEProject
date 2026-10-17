@@ -22,3 +22,15 @@ deployments:
     schedules:
       - cron: "30 * * * *"
         timezone: UTC
+
+  - name: kev-epss-enrichment
+    entrypoint: cvelist/flows.py:enrich_kev_epss_flow
+    work_pool:
+      name: itl-amalia
+      job_variables:
+        image: nweistra/itlprefectcvelistv5:latest
+        image_pull_policy: IfNotPresent
+        namespace: prefect-demo
+    schedules:
+      - cron: "0 6 * * *"
+        timezone: UTC

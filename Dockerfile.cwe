@@ -8,8 +8,11 @@ ENV PYTHONUNBUFFERED=1 \
 COPY requirements.txt /opt/prefect/requirements.txt
 RUN pip install --no-cache-dir -r /opt/prefect/requirements.txt
 
-COPY ./cvelist /opt/prefect/cvelist/
+COPY feed_download.py /opt/prefect/feed_download.py
+COPY cwe/tasks.py /opt/prefect/cwe/tasks.py
+COPY cwe/flows.py /opt/prefect/cwe/flows.py
+COPY cwe/weaknesses.py /opt/prefect/cwe/weaknesses.py
 COPY prefect.yaml /opt/prefect/prefect.yaml
 
 WORKDIR /opt/prefect
-CMD ["prefect", "deploy", "--all"]
+CMD ["prefect", "deploy", "--name", "cwe-catalog-sync", "--no-prompt"]

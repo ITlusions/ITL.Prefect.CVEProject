@@ -1,0 +1,14 @@
+# Built on the CVE image, which already has Prefect, requests and psycopg installed.
+# That avoids a second pip install of the same requirements.
+ARG BASE_IMAGE=nweistra/itlprefectcvelistv5cve:checkpoint-20261020
+FROM ${BASE_IMAGE}
+
+# gpg verifies the CSAF signatures.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gnupg \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY feed_download.py /opt/prefect/feed_download.py
+COPY csaf/ /opt/prefect/csaf/
+
+WORKDIR /opt/prefect

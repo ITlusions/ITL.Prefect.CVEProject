@@ -10,27 +10,53 @@ pull:
 
 deployments:
   - name: cvelistv5-delta-import
-    entrypoint: cvelist/flows.py:import_cvelistv5_flow
+    entrypoint: cvelist/import_flow.py:import_cvelistv5_flow
     parameters:
       mode: delta
     work_pool:
       name: itl-amalia
       job_variables:
-        image: nweistra/itlprefectcvelistv5:latest
+        image: nweistra/itlprefectcvelistv5cve:commits-20261020
         image_pull_policy: IfNotPresent
         namespace: prefect-demo
+        env:
+          CVE_IMPORT_PARSE_WORKERS: "4"
     schedules:
       - cron: "30 * * * *"
         timezone: UTC
 
   - name: kev-epss-enrichment
-    entrypoint: cvelist/flows.py:enrich_kev_epss_flow
+    entrypoint: cvelist/enrichment_flow.py:enrich_kev_epss_flow
     work_pool:
       name: itl-amalia
       job_variables:
-        image: nweistra/itlprefectcvelistv5:latest
-        image_pull_policy: IfNotPresent
+        image: nweistra/itlprefectcvelistv5kevepss:latest
+        image_pull_policy: Always
         namespace: prefect-demo
     schedules:
       - cron: "0 6 * * *"
+        timezone: UTC
+
+  - name: cwe-catalog-sync
+    entrypoint: cwe/flows.py:import_cwe_catalog_flow
+    work_pool:
+      name: itl-amalia
+      job_variables:
+        image: nweistra/itlprefectcvelistv5cwe:latest
+        image_pull_policy: Always
+        namespace: prefect-demo
+    schedules:
+      - cron: "0 5 * * 1"
+        timezone: UTC
+
+  - name: ncsc-csaf-import
+    entrypoint: csaf/flows.py:import_ncsc_csaf_flow
+    work_pool:
+      name: itl-amalia
+      job_variables:
+        image: nweistra/itlprefectcvelistv5csaf:csaf-20261020-5
+        image_pull_policy: IfNotPresent
+        namespace: prefect-demo
+    schedules:
+      - cron: "15 * * * *"
         timezone: UTC

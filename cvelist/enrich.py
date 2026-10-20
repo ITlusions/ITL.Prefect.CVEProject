@@ -1,18 +1,22 @@
 import csv
 import gzip
 import io
+import json
 import os
 import time
 from datetime import date
 
 import psycopg
-import requests
 from prefect import task
 from prefect.logging import get_run_logger
+
+from feed_download import download_bytes
 
 KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 EPSS_URL = "https://epss.cyentia.com/epss_scores-current.csv.gz"
 BATCH_SIZE = 1000
+MAX_KEV_BYTES = 8 * 1024 * 1024
+MAX_EPSS_BYTES = 64 * 1024 * 1024
 
 CREATE_SQL = """
     CREATE TABLE IF NOT EXISTS cve_enrichment (
@@ -50,9 +54,8 @@ UPSERT_SQL = """
 @task(retries=3, retry_delay_seconds=30)
 def fetch_kev() -> dict[str, dict]:
     logger = get_run_logger()
-    response = requests.get(KEV_URL, timeout=120)
-    response.raise_for_status()
-    vulnerabilities = response.json()["vulnerabilities"]
+    payload = download_bytes(KEV_URL, max_bytes=MAX_KEV_BYTES, timeout=120)
+    vulnerabilities = json.loads(payload)["vulnerabilities"]
     logger.info("Fetched %d KEV entries", len(vulnerabilities))
     return {
         v["cveID"]: {
@@ -67,9 +70,8 @@ def fetch_kev() -> dict[str, dict]:
 @task(retries=3, retry_delay_seconds=30)
 def fetch_epss() -> dict[str, dict]:
     logger = get_run_logger()
-    response = requests.get(EPSS_URL, timeout=300)
-    response.raise_for_status()
-    text = gzip.decompress(response.content).decode("utf-8")
+    payload = download_bytes(EPSS_URL, max_bytes=MAX_EPSS_BYTES, timeout=300)
+    text = gzip.decompress(payload).decode("utf-8")
     reader = csv.DictReader(line for line in io.StringIO(text) if not line.startswith("#"))
     scores = {
         row["cve"]: {

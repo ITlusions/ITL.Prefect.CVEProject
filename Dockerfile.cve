@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/opt/prefect \
+    PREFECT_API_URL=http://prefect-server.prefect-demo.svc.cluster.local:4200/api
+
+COPY requirements.txt /opt/prefect/requirements.txt
+RUN pip install --no-cache-dir -r /opt/prefect/requirements.txt
+
+COPY feed_download.py /opt/prefect/feed_download.py
+COPY cvelist/affected_products.py /opt/prefect/cvelist/affected_products.py
+COPY cvelist/tasks.py /opt/prefect/cvelist/tasks.py
+COPY cvelist/checkpoint.py /opt/prefect/cvelist/checkpoint.py
+COPY cvelist/patch_commits.py /opt/prefect/cvelist/patch_commits.py
+COPY cvelist/import_flow.py /opt/prefect/cvelist/import_flow.py
+COPY cwe/weaknesses.py /opt/prefect/cwe/weaknesses.py
+COPY prefect.yaml /opt/prefect/prefect.yaml
+
+WORKDIR /opt/prefect
+CMD ["prefect", "deploy", "--name", "cvelistv5-delta-import", "--no-prompt"]
